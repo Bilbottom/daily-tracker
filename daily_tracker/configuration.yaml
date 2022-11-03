@@ -1,0 +1,66 @@
+---
+tracker:
+  # Options to configure how the pop-up box functions
+  options:
+
+    interval:
+      value: 15
+      type: int
+      description: >
+        The time, in minutes, between each of the pop-up boxes.
+        
+        Positive whole numbers only.
+
+    run-on-startup:
+      value: Yes
+      type: boolean
+      description: >
+        Whether or not the tracker should start running when the application is
+        initialised.
+        
+        Values of "Yes" or "No" only.
+
+    show-last-n-weeks:
+      value: 2
+      type: int
+      description: >
+        Whether or not the tracker should start running when the application is
+        initialised.
+        
+        Positive whole numbers only.
+
+    use-calendar-meetings:
+      value: Yes
+      type: boolean
+      description: >
+        Whether or not the tracker should auto-fill with meeting details from
+        the linked calendar.
+        
+        Values of "Yes" or "No" only. Currently not supported.
+
+    use-jira-sprint:
+      value: Yes
+      type: boolean
+      description: >
+        Whether or not the tracker should auto-fill with task details from the
+        linked Jira filter.
+        
+        Values of "Yes" or "No" only. Currently not supported.
+
+    post-to-slack:
+      value: Yes
+      type: boolean
+      description: >
+        Whether or not the tracker should post a message with the entered pop-up
+        values to a Slack channel.
+        
+        Values of "Yes" or "No" only. Currently not supported.
+
+    post-to-jira:
+      value: Yes
+      type: boolean
+      description: >
+        Whether or not the tracker should update the linked Jira ticket in Jira
+        with a worklog.
+        
+        Values of "Yes" or "No" only. Currently not supported.
