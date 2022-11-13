@@ -10,11 +10,18 @@ class DatabaseConnector:
     def __init__(self, filepath: str):
         self.filepath = pathlib.Path(filepath).resolve()
         self.connection = sqlite3.connect(self.filepath)
-        self._create_table()
+        self._create_backend()
 
-    def _create_table(self) -> None:
+    @property
+    def engine(self) -> str:
         """
-        Create the tracker table if it doesn't already exist.
+        The database connection to be used with Pandas and SQLAlchemy.
+        """
+        return r"sqlite:///" + str(self.filepath).replace("\\", r"/")
+
+    def _create_backend(self) -> None:
+        """
+        Create the backend if it doesn't already exist.
         """
         if not(
             self.connection.execute(
