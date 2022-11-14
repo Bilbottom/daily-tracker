@@ -7,10 +7,13 @@ import re
 import warnings
 
 import pandas as pd
-import pprint
 
+import daily_tracker.calendars.outlook_connector
+import daily_tracker.calendars.calendar_types
 import daily_tracker.database.database
 import daily_tracker.jira_connector.jira_connector
+import daily_tracker.slack_connector.slack_connector
+import daily_tracker.utils.utils
 
 
 # Private Sub UserForm_Initialize()
@@ -181,31 +184,6 @@ import daily_tracker.jira_connector.jira_connector
 # """
 
 
-####################################################################################################
-####################################################################################################
-
-# Private Sub PostMessageToSlack()
-#     '''
-#     ' Execute the Python script which posts a message to a dedicated Slack channel
-#     '''
-#     Const sSlackPy As String = _
-#         "C:\Users\bill.wallis\OneDrive - Allica\Documents\Repository\Python\REST-APIs\Slack\main.py"
-#
-#     If Trim(Me.tbxDetail) = "" Then
-#         Call modPython.RunPython(sFile:=sSlackPy, vArg1:=Trim(Me.cbxProject))
-#     Else
-#         Call modPython.RunPython(sFile:=sSlackPy, vArg1:="*" & Trim(Me.cbxProject) & "*: " & Trim(Me.tbxDetail))
-#     End If
-# End Sub
-
-
-def get_first_item_in_dict(dictionary: dict) -> tuple:
-    """
-    Return the first key and value in a dictionary as a tuple.
-    """
-    return next(iter(dictionary.items()))
-
-
 class ActionHandler:
     """
     Handler for the actions that are triggered on the pop-up box.
@@ -214,6 +192,10 @@ class ActionHandler:
     def __init__(self, conn: daily_tracker.database.database.DatabaseConnector):
         self.conn = conn
         self.weeks_to_show = 2
+        self.use_calendar_meetings = False  # Get from `configurations.yaml`
+        self.calendar_handler = MeetingHandler(
+            calendar_type=daily_tracker.calendars.calendar_types.CalendarTypes.OUTLOOK
+        )
 
     def get_project_drop_down_list(self) -> dict:
         """
@@ -240,138 +222,63 @@ class ActionHandler:
             ).to_dict("split")["data"]
         )
 
-    def get_default_task_and_detail(self) -> tuple[str, str]:
+    def get_default_task_and_detail(self, at_datetime: datetime.datetime) -> tuple[str, str]:
         """
         Get the default values for the input box.
 
         This takes the meeting details from the linked calendar (if one has been
         linked), or just uses the latest task.
         """
-        def get_exception_detail(meeting: tuple) -> tuple:
-            """
-            Map exceptions to their standardised entries.
+        current_meeting = self.calendar_handler.get_appointment_at_datetime(
+            at_datetime=at_datetime,
+            categories_to_exclude=["Planned Work"],
+        )
 
-            For example, something like ("Meetings", "Catch-Up with JJ") could
-            be mapped to ("Catch-Ups", "JJ").
-            """
-            return meeting
-
-        current_meeting = ("task", "detail")  # Get from the linked calendar
-        use_calendar_meetings = False  # Get from `configurations.yaml`
-        meeting_is_exception = False  # Derive from the category of the meeting
-
-        if use_calendar_meetings and current_meeting is not None:
-            if meeting_is_exception:
-                current_meeting = get_exception_detail(current_meeting)
-            return current_meeting
-        else:
-            return get_first_item_in_dict(self.get_project_drop_down_list())
-
-
-####################################################################################################
-####################################################################################################
+        if not self.use_calendar_meetings or current_meeting is None:
+            return daily_tracker.utils.utils.get_first_item_in_dict(
+                self.get_project_drop_down_list()
+            )
+        return MEETING_EXCEPTIONS.get(current_meeting[0], current_meeting)
 
 
 class MeetingHandler:
     """
     Handle the connection to the linked calendar.
     """
-    def __init__(self):
-        pass
+    def __init__(self, calendar_type: daily_tracker.calendars.calendar_types.CalendarTypes):
+        self.connection: daily_tracker.calendars.calendar_types.Calendar = calendar_type.value()
+
+    def get_appointment_at_datetime(
+        self,
+        at_datetime: datetime.datetime,
+        categories_to_exclude: list[str],
+    ) -> str | None:
+        """
+        Get the current meeting from Outlook, if one exists.
+
+        This excludes meetings that are daily meetings and meetings whose
+        categories are in the supplied list.
+        """
+        events = self.connection.get_calendar_at_datetime(at_datetime=at_datetime)
+        if len(events) != 0 or any(i in events[0].categories for i in categories_to_exclude):
+            return None  # Don't take any of them
+
+        return events[0].subject
 
 
-# Private Function GetCurrentAppointment(ByVal sTime As String) As String
-#     '''
-#     ' Get the current meeting from Outlook, if one exists
-#     '
-#     ' Might experience performance drop-off when calendar gets bigger
-#     ' Only returns something if exactly one appointment is found
-#     ' Ignores all-day appointments and Planned Work category
-#     '
-#     ' https://stackoverflow.com/q/1927799/8213085
-#     '''
-#     Dim olCalItems As Outlook.Items
-#     Dim olFiltered As Outlook.Items
-#     Dim olItem     As Outlook.AppointmentItem
-#     Dim sTimeFilt  As String
-#     Dim sFilter    As String
-#     Dim i          As Long
-#
-#     Let sTimeFilt = Format(Now, "yyyy-mm-dd") & " " & sTime
-#     Let sFilter = "[Start] <= '" & sTimeFilt & "' AND [End] > '" & sTimeFilt & "'"
-#
-#     Set olCalItems = CreateObject("Outlook.Application").GetNamespace("MAPI").GetDefaultFolder(olFolderCalendar).Items
-#     olCalItems.IncludeRecurrences = True
-#     olCalItems.Sort "[Start]"
-#     Set olFiltered = olCalItems.Restrict(sFilter)
-#
-#     For Each olItem In olFiltered
-#         If i > 0 Then GoTo ExitEarly
-#
-#         If (Not olItem.AllDayEvent) And (InStr(1, olItem.Categories, "Planned Work") = 0) Then
-#             Let GetCurrentAppointment = olItem.Subject
-#             Let i = i + 1
-#         End If
-#     Next olItem
-#
-#     Exit Function
-#
-# ExitEarly:
-#     Let GetCurrentAppointment = ""
-# End Function
-
-
-# Private Function IsAppointmentException(ByVal sSubject As String) As Boolean
-#     '''
-#     ' Exceptions list -- bad idea to do it this way
-#     '''
-#     Const sExceptions As String = "" _
-#         & "Daily Jira Call," _
-#         & "Jira Scrum," _
-#         & "Jira Scrum / Team Meeting," _
-#         & "Planning," _
-#         & "Nik & Bill Catch Up," _
-#         & "Nik & Bill Developmental Catch Up," _
-#         & "1-2-1 Bill & Juliana," _
-#         & "Manage Jira Tickets," _
-#         & "Personal Development on Alteryx," _
-#         & "Personal Development on Tableau"
-#
-#     Let IsAppointmentException = IsInArray(sSubject, Split(sExceptions, ","))
-# End Function
-# Private Function ConvertAppointmentException(ByVal sSubject As String) As String
-#     '''
-#     ' Exceptions list -- bad idea to do it this way
-#     '''
-#     Select Case sSubject
-#         Case "Daily Jira Call"
-#             Let ConvertAppointmentException = "Catch Ups,Daily Jira Call"
-#         Case "Jira Scrum"
-#             Let ConvertAppointmentException = "Catch Ups,Jira Scrum"
-#         Case "Jira Scrum / Team Meeting"
-#             Let ConvertAppointmentException = "Catch Ups,Jira Scrum"
-#         Case "Planning"
-#             Let ConvertAppointmentException = "Catch Ups,Planning"
-#         Case "Nik & Bill Catch Up"
-#             Let ConvertAppointmentException = "Catch Ups,Nik & Bill"
-#         Case "Nik & Bill Developmental Catch Up"
-#             Let ConvertAppointmentException = "Catch Ups,Nik & Bill"
-#         Case "1-2-1 Bill & Juliana"
-#             Let ConvertAppointmentException = "Catch Ups,Juliana & Bill"
-#         Case "Manage Jira Tickets"
-#             Let ConvertAppointmentException = "Housekeeping,Manage Jira Tickets"
-#         Case "Personal Development on Alteryx"
-#             Let ConvertAppointmentException = "Personal Development,Alteryx"
-#         Case "Personal Development on Tableau"
-#             Let ConvertAppointmentException = "Personal Development,Tableau"
-#         Case Else
-#             Err.Raise Number:=513, Description:="Unrecognised Appointment Exception"
-#     End Select
-# End Function
-
-
-####################################################################################################
-####################################################################################################
+# This should be altered to be managed outside of code
+MEETING_EXCEPTIONS = {  # Exception: Replacement
+    "Daily Jira Call": ("Catch Ups", "Daily Jira Call"),
+    "Jira Scrum": ("Catch Ups", "Jira Scrum"),
+    "Jira Scrum / Team Meeting": ("Catch Ups", "Jira Scrum"),
+    "Planning": ("Catch Ups", "Planning"),
+    "Nik & Bill Catch Up": ("Catch Ups", "Nik & Bill"),
+    "Nik & Bill Developmental Catch Up": ("Catch Ups", "Nik & Bill"),
+    "1-2-1 Bill & Juliana": ("Catch Ups", "Juliana & Bill"),
+    "Manage Jira Tickets": ("Housekeeping", "Manage Jira Tickets"),
+    "Personal Development on Alteryx": ("Personal Development", "Alteryx"),
+    "Personal Development on Tableau": ("Personal Development", "Tableau"),
+}
 
 
 class JiraHandler:
@@ -420,3 +327,20 @@ class JiraHandler:
             warnings.warn(f"Only using the first {response['maxResults']} tickets returned from the JQL.")
 
         return [f"{issue['key']} {issue['fields']['summary']}" for issue in response["issues"]]
+
+
+class SlackHandler:
+    """
+    Handle the connection to the linked Slack workspace.
+    """
+    def __init__(self, url: str, token: str):
+        self.connector = daily_tracker.slack_connector.slack_connector.SlackConnector(
+            url=url,
+            token=token,
+        )
+
+    def post_to_channel(self, task: str, detail: str) -> None:
+        """
+        Post the task details to a channel.
+        """
+        self.connector.post_to_channel(message=f"*{task}*: {detail}")
