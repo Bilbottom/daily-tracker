@@ -18,7 +18,7 @@ import json
 import requests
 
 
-class JiraConnector(object):
+class JiraConnector:
     """
     Naive implementation of a connector to Jira via its REST API.
 
