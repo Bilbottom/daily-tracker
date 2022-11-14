@@ -6,9 +6,10 @@ running this code.
 """
 import dataclasses
 import datetime
-from typing import Any
 
 import win32com.client
+
+import daily_tracker.utils.utils
 
 
 @dataclasses.dataclass
@@ -34,7 +35,7 @@ class OutlookEvent:
         self.start = self._appointment.start
         self.end = self._appointment.end
         self.body = self._appointment.body
-        self.categories = self._appointment.categories
+        self.categories = daily_tracker.utils.utils.comma_list_to_list(self._appointment.categories)
 
 
 class OutlookConnector:
@@ -47,18 +48,35 @@ class OutlookConnector:
         self.calendar.IncludeRecurrences = True
         self.calendar.Sort('[Start]')
 
-    def get_calendar_between_dates(self, start_date: datetime.date, end_date: datetime.date) -> Any:
+    def get_calendar_between_datetimes(
+        self,
+        start_datetime: datetime.datetime,
+        end_datetime: datetime.datetime,
+    ) -> list[OutlookEvent]:
         """
-        Return the events in the calendar between the start_date and end_date.
+        Return the events in the calendar between the start datetime (inclusive)
+        and end datetime exclusive.
         """
         restricted_calendar = self.calendar.Restrict(
             " AND ".join([
-                f"[Start] >= '{start_date.strftime('%Y-%m-%d')}'",
-                f"[END] >= '{end_date.strftime('%Y-%m-%d')}'",
+                f"[Start] >= '{start_datetime.strftime('%Y-%m-%d %H:%M')}'",
+                f"[END] < '{end_datetime.strftime('%Y-%m-%d %H:%M')}'",
             ])
         )
         return [OutlookEvent(app) for app in restricted_calendar]
 
-    def main(self):
-        appointments = self.get_calendar_between_dates(datetime.date(2022, 11, 12), datetime.date(2022, 11, 14))
-        [print(app) for app in appointments]
+    def get_calendar_at_datetime(
+        self,
+        at_datetime: datetime.datetime,
+    ) -> list[OutlookEvent]:
+        """
+        Return the events in the calendar that are scheduled to on or over the
+        supplied datetime.
+        """
+        restricted_calendar = self.calendar.Restrict(
+            " AND ".join([
+                f"[Start] <= '{at_datetime.strftime('%Y-%m-%d %H:%M')}'",
+                f"[END] > '{at_datetime.strftime('%Y-%m-%d %H:%M')}'",
+            ])
+        )
+        return [OutlookEvent(app) for app in restricted_calendar]
