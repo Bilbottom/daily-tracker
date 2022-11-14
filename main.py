@@ -7,10 +7,10 @@ import os
 import dotenv
 
 import daily_tracker.actions
+import daily_tracker.calendars.outlook_connector
 import daily_tracker.database.database
 import daily_tracker.form
 import daily_tracker.scheduler
-import daily_tracker.calendars.outlook_connector
 
 
 dotenv.load_dotenv(dotenv_path=r".env")
@@ -18,6 +18,9 @@ JIRA_CREDENTIALS = {
     "url": os.getenv("JIRA_URL"),
     "key": os.getenv("JIRA_KEY"),
     "secret": os.getenv("JIRA_SECRET"),
+}
+SLACK_CREDENTIALS = {
+    "url": os.getenv("SLACK_URL"),
 }
 
 
@@ -55,8 +58,17 @@ def main() -> None:
     # print(items)
     # jira_handler = daily_tracker.actions.JiraHandler(**JIRA_CREDENTIALS)
     # print(jira_handler.get_tickets_in_sprint())
-    outlook_conn = daily_tracker.calendars.outlook_connector.OutlookConnector()
-    outlook_conn.main()
+    # outlook_conn = daily_tracker.calendars.outlook_connector.OutlookConnector()
+    # appointments = outlook_conn.get_calendar_between_datetimes(
+    #     start_datetime=datetime.datetime(2022, 11, 12, 0, 0, 0),
+    #     end_datetime=datetime.datetime(2022, 11, 15, 0, 0, 0),
+    # )
+    # appointments = outlook_conn.get_calendar_at_datetime(
+    #     date_time=datetime.datetime.now(),
+    # )
+    # [print(app) for app in appointments]
+    slack_handler = daily_tracker.actions.SlackHandler(**SLACK_CREDENTIALS)
+    slack_handler.post_to_channel(task="Something", detail="Some detail")
 
 
 if __name__ == "__main__":
