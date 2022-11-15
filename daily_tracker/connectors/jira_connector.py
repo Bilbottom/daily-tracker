@@ -79,18 +79,30 @@ class JiraConnector:
             data={},
         )
 
-    def search_for_issues_using_jql(self, search_params: dict[str, str]) -> requests.Response:
+    def search_for_issues_using_jql(
+        self,
+        jql: str,
+        fields: list[str],
+        start_at: int = 0,
+        max_results: int = 50,
+    ) -> requests.Response:
         """
         Call the "Search for issues using JQL (GET)" endpoint of the API.
 
         https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-search/#api-rest-api-3-search-get
         """
         endpoint = "search"
+        params = {
+            "jql": jql,
+            "fields": fields,
+            "start_at": start_at,
+            "max_results": max_results,
+        }
         return requests.request(
             method="GET",
             url=self._base_url + endpoint,
             headers=self.request_headers,
-            params=search_params,
+            params=params,
         )
 
     def get_project_components(self, project_id: str) -> requests.Response:
@@ -107,7 +119,7 @@ class JiraConnector:
             data={},
         )
 
-    def add_worklog(self, issue_key: str, detail: str, interval: int, at_datetime: str) -> requests.Response:
+    def add_worklog(self, issue_key: str, detail: str, at_datetime: str, interval: int) -> requests.Response:
         """
         Call the "Add worklog" endpoint of the API.
 

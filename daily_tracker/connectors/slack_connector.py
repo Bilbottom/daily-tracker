@@ -15,9 +15,13 @@ class SlackConnector:
     """
     Naive implementation of a connector to Slack via its SDK.
     """
-    def __init__(self, url: str, token: str):
+    def __init__(
+        self,
+        url: str,
+        # token: str,
+    ):
         self._base_url = url
-        self._api_token = token
+        # self._api_token = token
         self.client = slack_sdk.WebhookClient(url=self._base_url)
 
     def post_to_channel(self, message: str) -> None:
