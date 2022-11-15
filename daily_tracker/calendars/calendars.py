@@ -1,11 +1,10 @@
 """
 Calendar types available to use for linking.
 """
-import enum
 import datetime
 from typing import Protocol
 
-import daily_tracker.calendars.outlook_connector
+import daily_tracker
 
 
 class Calendar(Protocol):
@@ -13,7 +12,7 @@ class Calendar(Protocol):
     Abstraction of the various calendar types that can be synced with the daily
     tracker.
     """
-    def get_calendar_between_datetimes(
+    def get_appointments_between_datetimes(
         self,
         start_datetime: datetime.datetime,
         end_datetime: datetime.datetime,
@@ -24,7 +23,7 @@ class Calendar(Protocol):
         """
         ...
 
-    def get_calendar_at_datetime(
+    def get_appointments_at_datetime(
         self,
         at_datetime: datetime.datetime
     ) -> list:
@@ -35,10 +34,19 @@ class Calendar(Protocol):
         ...
 
 
-# noinspection PyArgumentList
-class CalendarTypes(enum.Enum):
+def get_linked_calendar(calendar_type: str) -> Calendar:
     """
-    Calendar types available to use for linking.
+    Convert the input calendar type string to the concrete representation of the
+    class.
     """
-    OUTLOOK = daily_tracker.calendars.outlook_connector.OutlookConnector
-    # GOOGLE = enum.auto()
+    calendars = {
+        'outlook': daily_tracker.calendars.OutlookConnector,
+        # 'gmail': daily_tracker.calendars.GmailConnector,
+    }
+    if (calendar := calendars.get(calendar_type, None)) is None:
+        raise NotImplementedError(
+            f"The tracker currently does not support connections to {calendar}. Please use one of the following "
+            f"instead: {','.join(calendars.keys())}"
+        )
+
+    return calendar()

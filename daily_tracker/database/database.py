@@ -3,6 +3,7 @@ Maintain the backend SQLite database.
 """
 import pathlib
 import sqlite3
+from typing import Iterable
 
 
 class DatabaseConnector:
@@ -18,6 +19,12 @@ class DatabaseConnector:
         The database connection to be used with Pandas and SQLAlchemy.
         """
         return r"sqlite:///" + str(self.filepath).replace("\\", r"/")
+
+    def execute(self, sql: str, parameters: Iterable) -> sqlite3.Cursor:
+        """
+        Shortcut to the execute method on the SQLite connection object.
+        """
+        return self.connection.execute(sql, parameters)
 
     def _create_backend(self) -> None:
         """

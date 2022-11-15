@@ -48,7 +48,7 @@ class OutlookConnector:
         self.calendar.IncludeRecurrences = True
         self.calendar.Sort('[Start]')
 
-    def get_calendar_between_datetimes(
+    def get_appointments_between_datetimes(
         self,
         start_datetime: datetime.datetime,
         end_datetime: datetime.datetime,
@@ -65,7 +65,7 @@ class OutlookConnector:
         )
         return [OutlookEvent(app) for app in restricted_calendar]
 
-    def get_calendar_at_datetime(
+    def get_appointments_at_datetime(
         self,
         at_datetime: datetime.datetime,
     ) -> list[OutlookEvent]:
