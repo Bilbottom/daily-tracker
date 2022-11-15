@@ -2,26 +2,10 @@
 Entry point into this project.
 """
 import datetime
-import os
-
-import dotenv
 
 import daily_tracker.actions
-import daily_tracker.calendars.outlook_connector
-import daily_tracker.database.database
 import daily_tracker.form
 import daily_tracker.scheduler
-
-
-dotenv.load_dotenv(dotenv_path=r".env")
-JIRA_CREDENTIALS = {
-    "url": os.getenv("JIRA_URL"),
-    "key": os.getenv("JIRA_KEY"),
-    "secret": os.getenv("JIRA_SECRET"),
-}
-SLACK_CREDENTIALS = {
-    "url": os.getenv("SLACK_URL"),
-}
 
 
 def ok_action() -> None:
@@ -43,32 +27,36 @@ def test_action() -> None:
     pop_up.generate_form()
 
 
+class TestForm:
+    """
+    Dummy form for testing.
+    """
+    def __init__(self):
+        self.task = "DATA-123 This is a ticket"
+        self.detail = "This is some detail on the ticket"
+        self.at_datetime = datetime.datetime.now()
+        self.interval = 15
+
+
 def main() -> None:
     """
     Entry point into this project.
     """
-    # db_conn = daily_tracker.database.database.DatabaseConnector(filepath='tracker.db')
     # scheduler = daily_tracker.scheduler.IndefiniteScheduler(
     #     action=test_action,
     #     interval=1,
     # )
     # scheduler.schedule_first()
-    # action_handler = daily_tracker.actions.ActionHandler(conn=db_conn)
-    # items = action_handler.get_project_drop_down_list()
-    # print(items)
-    # jira_handler = daily_tracker.actions.JiraHandler(**JIRA_CREDENTIALS)
-    # print(jira_handler.get_tickets_in_sprint())
-    # outlook_conn = daily_tracker.calendars.outlook_connector.OutlookConnector()
-    # appointments = outlook_conn.get_calendar_between_datetimes(
-    #     start_datetime=datetime.datetime(2022, 11, 12, 0, 0, 0),
-    #     end_datetime=datetime.datetime(2022, 11, 15, 0, 0, 0),
-    # )
-    # appointments = outlook_conn.get_calendar_at_datetime(
-    #     date_time=datetime.datetime.now(),
-    # )
-    # [print(app) for app in appointments]
-    slack_handler = daily_tracker.actions.SlackHandler(**SLACK_CREDENTIALS)
-    slack_handler.post_to_channel(task="Something", detail="Some detail")
+
+    action_handler = daily_tracker.actions.ActionHandler(TestForm())
+    # print(action_handler.database_handler.get_recent_tasks(2))
+    # print(action_handler.jira_handler.get_tickets_in_sprint())
+    print(action_handler.calendar_handler.get_appointment_at_datetime(
+        datetime.datetime.now(),
+        action_handler.configuration.appointment_category_exclusions
+    ))
+    # print(action_handler.configuration.__dict__)
+    # print(action_handler.configuration.appointment_exceptions)
 
 
 if __name__ == "__main__":
