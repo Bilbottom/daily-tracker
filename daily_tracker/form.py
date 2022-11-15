@@ -6,6 +6,44 @@ import tkinter
 from typing import Callable
 
 
+# Private Sub UserForm_Initialize()
+#     '''
+#     ' Create the pop-up box and add the defaults to the boxes
+#     '''
+# '    On Error Resume Next
+# '        Me.Left = GetSetting("Userform Positioning", ThisWorkbook.FullName & "-" & Me.Name, "Left", 0)
+# '        Me.Top = GetSetting("Userform Positioning", ThisWorkbook.FullName & "-" & Me.Name, "Top", 0)
+# '    On Error GoTo 0
+#
+#     Dim sDefaults As String
+#     Let pCounter = 0
+#
+#     With Me
+#         Let sDefaults = GetDefaultTaskAndDetail(sTime:=.ScheduleTime)
+#
+#         ' Position and size
+#         .Left = 0: .Top = 0: .Height = 144: .Width = 240
+#
+#         ' Caption
+#         .Caption = "Interval Tracker at " & Me.ScheduleTime & " (" & Me.Interval & ")"
+#
+#         ' Update the drop-down
+#         Call ManageUpcomingTicketsInDropDown
+#
+#         ' Input boxes
+#         .tbxDetail.Value = Mid(sDefaults, 1 + InStr(sDefaults, ","))
+#         With Me.cbxProject
+#             .List = Split(Me.ProjectDropDownList, ",")
+#             .Value = Split(sDefaults, ",")(0)
+#
+#             ' Select the text within the Project box upon loading
+#             .SelStart = 0
+#             .SelLength = Len(.text)
+#         End With
+#     End With
+# End Sub
+
+
 class TrackerForm:
     """
     The pop-up box for the tracker.
@@ -34,6 +72,13 @@ class TrackerForm:
         """
         self._action()
         self._root.destroy()
+
+    def on_project_change(self) -> None:
+        """
+        When the value of the Project box changes, update the Detail box with
+        the latest value from the Project.
+        """
+        pass
 
     def create_text_box_frame(self, master: tkinter.Misc, label_text: str) -> tkinter.Frame:
         """
