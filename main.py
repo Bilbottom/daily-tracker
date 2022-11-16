@@ -20,7 +20,7 @@ def test_action() -> None:
     Dummy action for the scheduler.
     """
     pop_up = daily_tracker.form.TrackerForm(
-        date_time=datetime.datetime.now(),
+        at_datetime=datetime.datetime.now(),
         interval=15,
         action=ok_action,
     )
@@ -42,15 +42,25 @@ def main() -> None:
     """
     Entry point into this project.
     """
+    # ? Form testing
+    form = daily_tracker.form.TrackerForm(
+        at_datetime=datetime.datetime.now(),
+        interval=15,
+        action=ok_action,
+    )
+    form.generate_form()
+
+    # ? Scheduler testing
     # scheduler = daily_tracker.scheduler.IndefiniteScheduler(
     #     action=test_action,
     #     interval=1,
     # )
     # scheduler.schedule_first()
 
-    action_handler = daily_tracker.actions.ActionHandler(TestForm())
+    # ? Action handler testing
+    # action_handler = daily_tracker.actions.ActionHandler(TestForm())
     # print(action_handler.database_handler.get_recent_tasks(2))
-    print(action_handler.jira_handler.get_tickets_in_sprint())
+    # print(action_handler.jira_handler.get_tickets_in_sprint())
     # print(action_handler.calendar_handler.get_appointment_at_datetime(
     #     datetime.datetime.now(),
     #     action_handler.configuration.appointment_category_exclusions
