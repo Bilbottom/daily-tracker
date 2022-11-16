@@ -40,8 +40,8 @@ def get_linked_calendar(calendar_type: str) -> Calendar:
     class.
     """
     calendars = {
-        'outlook': daily_tracker.calendars.OutlookConnector,
-        # 'gmail': daily_tracker.calendars.GmailConnector,
+        "outlook": daily_tracker.calendars.OutlookConnector,
+        # "gmail": daily_tracker.calendars.GmailConnector,
     }
     if (calendar := calendars.get(calendar_type, None)) is None:
         raise NotImplementedError(

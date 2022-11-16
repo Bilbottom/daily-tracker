@@ -46,5 +46,5 @@ class DatabaseConnector:
         """
         Open a file and execute the query inside it.
         """
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             return self.connection.executescript(f.read())

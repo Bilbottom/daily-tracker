@@ -9,7 +9,7 @@ import datetime
 
 import win32com.client
 
-import daily_tracker.utils.utils
+import daily_tracker.utils
 
 
 @dataclasses.dataclass
@@ -43,10 +43,10 @@ class OutlookConnector:
     Naive implementation of a connector to Outlook.
     """
     def __init__(self):
-        outlook = win32com.client.Dispatch('Outlook.Application').GetNamespace('MAPI')
+        outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
         self.calendar = outlook.getDefaultFolder(9).Items
         self.calendar.IncludeRecurrences = True
-        self.calendar.Sort('[Start]')
+        self.calendar.Sort("[Start]")
 
     def get_appointments_between_datetimes(
         self,
@@ -73,10 +73,11 @@ class OutlookConnector:
         Return the events in the calendar that are scheduled to on or over the
         supplied datetime.
         """
+        datetime_string = at_datetime.strftime('%Y-%m-%d %H:%M')
         restricted_calendar = self.calendar.Restrict(
             " AND ".join([
-                f"[Start] <= '{at_datetime.strftime('%Y-%m-%d %H:%M')}'",
-                f"[END] > '{at_datetime.strftime('%Y-%m-%d %H:%M')}'",
+                f"[Start] <= '{datetime_string}'",
+                f"[END] > '{datetime_string}'",
             ])
         )
         return [OutlookEvent(app) for app in restricted_calendar]
