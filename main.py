@@ -50,11 +50,11 @@ def main() -> None:
 
     action_handler = daily_tracker.actions.ActionHandler(TestForm())
     # print(action_handler.database_handler.get_recent_tasks(2))
-    # print(action_handler.jira_handler.get_tickets_in_sprint())
-    print(action_handler.calendar_handler.get_appointment_at_datetime(
-        datetime.datetime.now(),
-        action_handler.configuration.appointment_category_exclusions
-    ))
+    print(action_handler.jira_handler.get_tickets_in_sprint())
+    # print(action_handler.calendar_handler.get_appointment_at_datetime(
+    #     datetime.datetime.now(),
+    #     action_handler.configuration.appointment_category_exclusions
+    # ))
     # print(action_handler.configuration.__dict__)
     # print(action_handler.configuration.appointment_exceptions)
 

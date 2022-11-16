@@ -95,8 +95,8 @@ class JiraConnector:
         params = {
             "jql": jql,
             "fields": fields,
-            "start_at": start_at,
-            "max_results": max_results,
+            "startAt": start_at,
+            "maxResults": max_results,
         }
         return requests.request(
             method="GET",

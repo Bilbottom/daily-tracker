@@ -5,7 +5,6 @@ import datetime
 import json
 import os.path
 import re
-import warnings
 from typing import Protocol
 
 import dotenv
@@ -308,12 +307,24 @@ class JiraHandler:
         jql = "project = DATA AND sprint IN openSprints() AND assignee = currentUser()"
         fields = ["summary", "duedate", "assignee"]
 
-        response = json.loads(self.connector.search_for_issues_using_jql(jql=jql, fields=fields).text)
-        if response["maxResults"] < response["total"]:
-            # TODO: Should add some recursive looping to get all tickets
-            warnings.warn(f"Only using the first {response['maxResults']} tickets returned from the JQL.")
+        def get_batch_of_tickets(start_at: int) -> dict:
+            """
+            Inner function to loop over until all tickets have been retrieved.
+            """
+            return json.loads(self.connector.search_for_issues_using_jql(
+                jql=jql,
+                fields=fields,
+                start_at=start_at,
+            ).text)
 
-        return [f"{issue['key']} {issue['fields']['summary']}" for issue in response["issues"]]
+        results = []
+        total = 999
+        while len(results) < total:
+            response = get_batch_of_tickets(start_at=len(results))
+            total = response["total"]
+            results += [f"{issue['key']} {issue['fields']['summary']}" for issue in response["issues"]]
+
+        return results
 
 
 class SlackHandler:
