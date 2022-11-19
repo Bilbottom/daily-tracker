@@ -19,16 +19,21 @@ import daily_tracker.database
 import daily_tracker.form
 
 
+DEBUG_MODE = True
+
+
 class Handler(abc.ABC):
     """
     Handles the actions to execute on the form for a given connector to another
     tool/software.
     """
-    # def __init__(self):
-    #     self.connection = None
 
     @abc.abstractmethod
-    def ok_actions(self, *args, **kwargs) -> None:
+    def ok_actions(
+        self,
+        configuration: daily_tracker.configuration.Configuration,
+        form: daily_tracker.form.TrackerForm,
+    ) -> None:
         """
         Actions to execute when the OK button is pressed on the form.
         """
@@ -51,16 +56,19 @@ class DatabaseHandler(Handler):
         The database actions that need to be executed when the OK button on the
         form is clicked.
         """
-        self.write_to_database(
-            task=form.task,
-            detail=form.detail,
-            at_datetime=form.at_datetime,
-            interval=form.interval,
-        )
+        if DEBUG_MODE:
+            print("Doing database actions...")
+        else:
+            self._write_to_database(
+                task=form.task,
+                detail=form.detail,
+                at_datetime=form.at_datetime,
+                interval=form.interval,
+            )
 
-        # Only extract data on the hour -- consider making this more flexible
-        if form.at_datetime.minute == 0:
-            self.write_to_csv(filepath=configuration.csv_filepath)
+            # Only extract data on the hour -- consider making this more flexible
+            if form.at_datetime.minute == 0:
+                self.write_to_csv(filepath=configuration.csv_filepath)
 
     def get_recent_tasks(self, show_last_n_weeks: int) -> dict:
         """
@@ -71,13 +79,10 @@ class DatabaseHandler(Handler):
         the task's latest detail.
         """
         latest_tasks = """
-            SELECT
-                task,
-                detail
-            FROM task_last_detail
+            SELECT task, detail
+            FROM task_detail_with_defaults
             WHERE last_date_time >= DATETIME('now', :date_modifier)
-               OR last_date_time = ''  /* The default tasks */
-            ORDER BY last_date_time DESC
+            ORDER BY indx, task
         """
         return dict(
             pd.read_sql(
@@ -87,7 +92,24 @@ class DatabaseHandler(Handler):
             ).to_dict("split")["data"]
         )
 
-    def write_to_database(
+    def get_details_for_task(self, task: str) -> list:
+        """
+        Return the list of recent detail for the task.
+        """
+        details = self.connection.execute(
+            """
+                SELECT detail
+                FROM tracker
+                WHERE task = :task
+                GROUP BY detail
+                ORDER BY MAX(date_time) DESC
+                LIMIT 10
+            """,
+            {"task": task}
+        ).fetchall()
+        return [detail[0] for detail in details]
+
+    def _write_to_database(
         self,
         task: str,
         detail: str,
@@ -139,14 +161,14 @@ class DatabaseHandler(Handler):
         )
 
 
-class CalendarHandler:
+class CalendarHandler(Handler):
     """
     Handle the connection to the linked calendar.
     """
     def __init__(self, calendar_type: str):
         self.connection = daily_tracker.calendars.get_linked_calendar(calendar_type)
 
-    def form_actions(
+    def ok_actions(
         self,
         configuration: daily_tracker.configuration.Configuration,
         form: daily_tracker.form.TrackerForm,
@@ -155,8 +177,11 @@ class CalendarHandler:
         The calendar actions that need to be executed when the OK button on the
         form is clicked.
         """
-        # Set status?
-        pass
+        if DEBUG_MODE:
+            print("Doing calendar actions...")
+        else:
+            # Set status?
+            print("Create some calendar actions!")
 
     def get_appointment_at_datetime(
         self,
@@ -181,7 +206,7 @@ class CalendarHandler:
         return None if len(events) != 1 else events[0].subject
 
 
-class JiraHandler:
+class JiraHandler(Handler):
     """
     Handle the connection to the linked Jira project.
     """
@@ -193,7 +218,7 @@ class JiraHandler:
         )
         self.project_key_pattern = re.compile(r"^[A-Z][\w\d]{1,9}-\d+")
 
-    def form_actions(
+    def ok_actions(
         self,
         configuration: daily_tracker.configuration.Configuration,
         form: daily_tracker.form.TrackerForm,
@@ -202,15 +227,19 @@ class JiraHandler:
         The Jira actions that need to be executed when the OK button on the form
         is clicked.
         """
-        if configuration.post_to_jira:
-            self.post_log_to_jira(
-                task=form.task,
-                detail=form.detail,
-                at_datetime=form.at_datetime,
-                interval=form.interval
-            )
+        # sourcery skip: merge-else-if-into-elif
+        if DEBUG_MODE:
+            print("Doing Jira actions...")
+        else:
+            if configuration.post_to_jira:
+                self._post_log_to_jira(
+                    task=form.task,
+                    detail=form.detail,
+                    at_datetime=form.at_datetime,
+                    interval=form.interval
+                )
 
-    def post_log_to_jira(
+    def _post_log_to_jira(
         self,
         task: str,
         detail: str,
@@ -230,11 +259,16 @@ class JiraHandler:
             interval=interval
         )
 
-    def get_tickets_in_sprint(self) -> list[str]:
+    def get_tickets_in_sprint(self, project_key: str = None) -> list[str]:
         """
         Get the list of tickets in the active sprint for the current user.
         """
-        jql = "project = DATA AND sprint IN openSprints() AND assignee = currentUser()"
+        # Pretty sure there's a better way to do this
+        if project_key:
+            jql = f"project = {project_key} AND sprint IN openSprints() AND assignee = currentUser()"
+        else:
+            jql = "sprint IN openSprints() AND assignee = currentUser()"
+
         fields = ["summary", "duedate", "assignee"]
 
         def get_batch_of_tickets(start_at: int) -> dict:
@@ -257,14 +291,14 @@ class JiraHandler:
         return results
 
 
-class SlackHandler:
+class SlackHandler(Handler):
     """
     Handle the connection to the linked Slack workspace.
     """
     def __init__(self, url: str):
         self.connector = daily_tracker.connectors.SlackConnector(url)
 
-    def form_actions(
+    def ok_actions(
         self,
         configuration: daily_tracker.configuration.Configuration,
         form: daily_tracker.form.TrackerForm,
@@ -273,12 +307,16 @@ class SlackHandler:
         The Slack actions that need to be executed when the OK button on the
         form is clicked.
         """
-        if configuration.post_to_slack:
-            self._post_to_channel(
-                task=form.task,
-                detail=form.detail
-            )
-        # Set status?
+        # sourcery skip: merge-else-if-into-elif
+        if DEBUG_MODE:
+            print("Doing Slack actions...")
+        else:
+            if configuration.post_to_slack:
+                self._post_to_channel(
+                    task=form.task,
+                    detail=form.detail
+                )
+                # Set status?
 
     def _post_to_channel(self, task: str, detail: str) -> None:
         """

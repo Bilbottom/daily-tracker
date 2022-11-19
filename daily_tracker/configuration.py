@@ -37,6 +37,10 @@ class Configuration:
         return self.options.get(option).get("value") or default
 
     @property
+    def interval(self) -> int:
+        return self._get_option_value("interval", False)
+
+    @property
     def run_on_startup(self) -> bool:
         return self._get_option_value("run-on-startup", False)
 

@@ -2,9 +2,12 @@
 The form for the pop-up box.
 
 https://youtu.be/5qOnzF7RsNA
+https://github.com/codefirstio/tkinter-data-entry
 """
 import datetime
 import tkinter as tk
+import tkinter.ttk
+from typing import Any
 
 import daily_tracker.actions
 
@@ -12,35 +15,43 @@ import daily_tracker.actions
 STYLE = {
     "font": ("Tahoma", 8),
 }
-OPTIONS = ["Item 1", "Item 2", "Item 3"]
+# OPTIONS = ["Item 1", "Item 2", "Item 3"]
+OPTIONS = ["1 Item", "2 Item", "3 Item"]
 
 
 class TrackerForm:
     """
     The pop-up box for the tracker.
     """
-    def __init__(
-        self,
-        at_datetime: datetime.datetime,
-        interval: int,
-    ):
+    def __init__(self, at_datetime: datetime.datetime):
         """
         Create the form handler.
         """
-        self.interval = interval
         self.at_datetime = at_datetime
-        self.task = "This is the task value"
-        self.detail = "This is the detail value"
         self.action_handler = daily_tracker.actions.ActionHandler(form=self)
+        self.interval = self.action_handler.configuration.interval
         self._width = 350
         self._height = 150
-        # self._top = 0
-        # self._left = 0
         self._root: tk.Tk | None = None
         self.project_text_box: TextBox | None = None
         self.detail_text_box: TextBox | None = None
         # self._root.mainloop()
         # Add properties like `is_meeting` and `is_jira_ticket`?
+        self.generate_form()
+
+    @property
+    def task(self) -> str:
+        """
+        Return the current task value.
+        """
+        return self.project_text_box.text_box.get()
+
+    @property
+    def detail(self) -> str:
+        """
+        Return the current detail value.
+        """
+        return self.detail_text_box.text_box.get()
 
     @property
     def date_time(self) -> str:
@@ -53,19 +64,28 @@ class TrackerForm:
         """
         Wrap the action so that we can schedule the next event when it's called.
         """
-        self.action_handler.ok_button_actions()
+        self.action_handler.ok_actions()
         print(  # Need to get the class properties looking at the Entry, not the Frame
-            f"Project: {self.project_text_box.text_box.get()}\n",
-            f"Detail: {self.detail_text_box.text_box.get()}",
+            f"Project:  {self.task}\n"
+            f"Detail:   {self.detail}\n"
+            f"Interval: {self.interval}\n"
+            f"Datetime: {self.at_datetime.isoformat()[:19]}\n"
+            f"{30 * '-'}"
         )
         self._root.destroy()
 
-    def on_project_change(self) -> None:
+    def on_project_change(self, *_) -> None:
         """
         When the value of the Project box changes, update the Detail box with
         the latest value from the Project.
         """
-        pass
+        print(
+            f"Changing the detail drop-down for task {self.task}. Use memoisation to avoid repeated queries to the DB?"
+        )
+        details = self.action_handler.database_handler.get_details_for_task(self.task)
+        print(f"Details: {details}")
+        self.detail_text_box.text_box['values'] = details
+        self.detail_text_box.text_box.set(details[0] if details else "")
 
     def ok_shortcut(self, event: tk.Event) -> None:
         """
@@ -123,11 +143,27 @@ class TrackerForm:
             expand=True,
         )
 
-        self.project_text_box = TextBox(text_box_frame, "Project")
-        self.detail_text_box = TextBox(text_box_frame, "Detail")
+        defaults = self.action_handler.get_default_task_and_detail(self.at_datetime)
+        options = self.action_handler.get_dropdown_options()
+
+        self.project_text_box = TextBox(
+            parent=text_box_frame,
+            label_text="Project",
+            default=defaults[0],
+            values=list(options),
+        )
+        self.detail_text_box = TextBox(
+            parent=text_box_frame,
+            label_text="Detail",
+            default=defaults[1],
+            values=self.action_handler.database_handler.get_details_for_task(defaults[0]),
+        )
 
         self.project_text_box.text_box.bind("<KeyPress>", self.ok_shortcut)
         self.detail_text_box.text_box.bind("<KeyPress>", self.ok_shortcut)
+
+        # self.project_text_box.text_box.bind("<Key>", self.on_project_change)
+        self.project_text_box.variable.trace("w", self.on_project_change)
 
         okay_button = tk.Button(
             self._root,
@@ -142,6 +178,8 @@ class TrackerForm:
             in_=button_frame,
             side=tk.LEFT,
         )
+        # Could only get this to work by sticking the call inside a lambda
+        okay_button.bind("<Return>", lambda _: self.action_wrapper())
 
         cancel_button = tk.Button(
             self._root,
@@ -149,13 +187,15 @@ class TrackerForm:
             width=20,
             borderwidth=3,
             text="Cancel",
-            command=lambda: self._root.destroy(),
+            command=self._root.destroy,
             font=STYLE["font"],
         )
         cancel_button.pack(
             in_=button_frame,
             side=tk.RIGHT,
         )
+        # Could only get this to work by sticking the call inside a lambda
+        cancel_button.bind("<Return>", lambda _: self._root.destroy())
 
         self._root.mainloop()
 
@@ -164,18 +204,19 @@ class TextBox:
     """
     A text box with a label for the main form.
     """
-    def __init__(self, parent: tk.Misc, label_text: str):
+    def __init__(self, parent: tk.Misc, label_text: str, default: Any, values: list[Any]):
         """
         Set the text box properties and create the widget.
         """
         self.parent = parent
         self.label_text = label_text
-        self.frame = self._build()
+        self.values = values
+        self.frame = self._build(default)
 
         self.variable: str
-        self.text_box: tk.Entry
+        self.text_box: tk.ttk.Combobox
 
-    def _build(self) -> tk.Frame:
+    def _build(self, default: Any) -> tk.Frame:
         """
         Build the text box and return it.
         """
@@ -192,22 +233,18 @@ class TextBox:
             relief="flat",
             font=STYLE["font"],
         )
-        text_box_value = tk.StringVar(inner)
-        text_box_value.set("Select an option...")
-        self.variable = text_box_value
 
-        text_box = tk.Entry(
+        text_box_value = tk.StringVar(inner)
+        text_box_value.set(default)
+        text_box = tk.ttk.Combobox(
             master=inner,
             textvariable=text_box_value,
             width=40,
-            borderwidth=2,
             font=STYLE["font"],
+            values=self.values,
         )
-        # text_box = tk.OptionMenu(
-        #     inner,
-        #     text_box_value,
-        #     *OPTIONS,
-        # )
+        # text_box.set(default)
+        self.variable = text_box_value
         self.text_box = text_box
 
         label.pack(in_=inner, side=tk.LEFT)

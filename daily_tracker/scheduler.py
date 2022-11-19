@@ -78,6 +78,12 @@ class IndefiniteScheduler:
         self.action = action
         self._interval = interval
 
+    def next_schedule_time(self) -> str:
+        """
+        Wrap the action so that we can schedule the next event when it's called.
+        """
+        return self._next_schedule_time.strftime("%Y-%m-%d %H:%M:%S")
+
     def action_wrapper(self) -> None:
         """
         Wrap the action so that we can schedule the next event when it's called.

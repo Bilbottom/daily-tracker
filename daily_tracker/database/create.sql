@@ -26,10 +26,6 @@ CREATE TABLE task_last_detail(
     detail TEXT NOT NULL,
     last_date_time DATETIME NOT NULL
 );
--- CREATE INDEX tracker_latest_tasks
---     ON task_last_detail(task, detail)
---     WHERE last_date_time >= DATETIME(MAX(last_date_time) OVER(), '-14 days')
--- ;
 
 
 DROP TRIGGER IF EXISTS set_tracker_latest_task_on_insert;
@@ -91,19 +87,30 @@ FROM default_tasks
 /*
     + main.tracker_latest_task +
     The latest detail per task over the last 14 days.
+*/
+DROP VIEW IF EXISTS task_detail_with_defaults;
+CREATE VIEW task_detail_with_defaults AS
+    WITH defaults AS (
+        SELECT
+            dt.task,
+            tld.detail,
+            COALESCE(NULLIF(tld.last_date_time, ''), '9999-12-31 00:00:00') AS last_date_time
+        FROM default_tasks AS dt
+            LEFT JOIN task_last_detail AS tld USING(task)
+    )
 
-    ! The last "14 days" should be configurable, so this shouldn't be done in a
-    ! view. Also, this view doesn't really add any value.
-*/
-/*
-DROP VIEW IF EXISTS tracker_latest_task;
-CREATE VIEW tracker_latest_task AS
-    SELECT
-        task,
-        detail,
-        last_date_time
-    FROM task_last_detail
-    WHERE last_date_time >= DATETIME('now', '-14 days')
-       OR last_date_time = ''
+        SELECT
+            0 AS indx,
+            task,
+            detail,
+            last_date_time
+        FROM defaults
+    UNION
+        SELECT
+            1 AS indx,
+            task,
+            detail,
+            last_date_time
+        FROM task_last_detail
+        WHERE task NOT IN (SELECT task FROM defaults)
 ;
-*/

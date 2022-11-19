@@ -43,18 +43,17 @@ class ActionHandler:
         self.jira_handler = daily_tracker.handlers.JiraHandler(**JIRA_CREDENTIALS)
         self.slack_handler = daily_tracker.handlers.SlackHandler(**SLACK_CREDENTIALS)
 
-    def ok_button_actions(self) -> None:
+    def ok_actions(self) -> None:
         """
         The actions that need to happen according to the configuration.
         """
-        print("The OK button actions...")
-        # for handler in [
-        #     self.database_handler,  # This needs to be done first
-        #     self.calendar_handler,
-        #     self.slack_handler,
-        #     self.jira_handler,
-        # ]:
-        #     handler.ok_actions(self.configuration, self.form)
+        for handler in [
+            self.database_handler,  # This needs to be done first
+            self.calendar_handler,
+            self.slack_handler,
+            self.jira_handler,
+        ]:
+            handler.ok_actions(self.configuration, self.form)
 
     def get_default_task_and_detail(self, at_datetime: datetime.datetime) -> tuple[str, str]:
         """
@@ -74,9 +73,9 @@ class ActionHandler:
             )
         return self.configuration.appointment_exceptions.get(current_meeting[0], current_meeting)
 
-    def dropdown_options(self) -> dict:
+    def get_dropdown_options(self) -> dict:
         """
-        Return the dropdown options that can easily be passed to the form.
+        Return the latest tasks and their most recent detail as a dictionary.
 
         This is always the most recent tasks, and optionally the tickets in the
         active sprint if a Jira connection has been configured.
