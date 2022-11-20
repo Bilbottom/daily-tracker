@@ -6,6 +6,10 @@ import pathlib
 
 import daily_tracker.form
 import daily_tracker.scheduler
+import daily_tracker.handlers
+
+
+APPLICATION_CREATED = True
 
 
 def create_env() -> None:
@@ -32,5 +36,10 @@ def main() -> None:
     """
     Entry point into this project.
     """
-    scheduler = daily_tracker.scheduler.IndefiniteScheduler(create_form)
-    scheduler.schedule_first()
+    if APPLICATION_CREATED:
+        scheduler = daily_tracker.scheduler.IndefiniteScheduler(create_form)
+        scheduler.schedule_first()
+    else:
+        create_env()
+        db_handler = daily_tracker.handlers.DatabaseHandler("tracker.db")
+        db_handler.import_history("daily-tracker-data.csv")
