@@ -173,6 +173,55 @@ class DatabaseHandler(Handler):
             )
         )
 
+    def truncate_tables(self) -> None:
+        """
+        Truncate the tables in the database that are updated through the form.
+        """
+        for table in ["tracker", "task_last_detail"]:
+            self.connection.truncate_table(table_name=table)
+        self.connection.connection.commit()
+
+    def import_history(self, filepath: str) -> None:
+        """
+        Import the existing CSV file into the SQLite database.
+        """
+        column_names = {
+            "Datetime": "date_time",
+            "Task": "task",
+            "Detail": "detail",
+            "Interval": "interval",
+        }
+        data = (
+            pd.read_csv(
+                filepath_or_buffer=filepath,
+                usecols=list(column_names),
+                parse_dates=["Datetime"]
+            )[list(column_names)]
+            .rename(column_names, axis=1)
+            .fillna("")
+        )
+
+        data["date_time"] = data["date_time"].dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        self.truncate_tables()
+        with self.connection.connection as conn:
+            conn.execute("""
+                INSERT INTO task_last_detail(task, detail, last_date_time)
+                    SELECT task, '', '' FROM default_tasks
+            """)
+            conn.commit()
+        # self.connection.connection.execute("""
+        #     INSERT INTO task_last_detail(task, detail, last_date_time)
+        #         SELECT task, '', '' FROM default_tasks
+        # """)
+        # self.connection.connection.close()
+        data.to_sql(
+            name="tracker",
+            con=self.connection.engine,
+            if_exists="append",
+            index=False,
+        )
+
 
 class CalendarHandler(Handler):
     """

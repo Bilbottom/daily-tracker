@@ -10,7 +10,7 @@ class DatabaseConnector:
     """Implements the `execute_file` method on a SQLite3 connection."""
     def __init__(self, filepath: str):
         self.filepath = pathlib.Path(filepath).resolve()
-        self.connection = sqlite3.connect(self.filepath)
+        self.connection = sqlite3.connect(self.filepath, timeout=15)
         self._create_backend()
 
     @property
@@ -20,7 +20,7 @@ class DatabaseConnector:
         """
         return r"sqlite:///" + str(self.filepath).replace("\\", r"/")
 
-    def execute(self, sql: str, parameters: Iterable) -> sqlite3.Cursor:
+    def execute(self, sql: str, parameters: Iterable = None) -> sqlite3.Cursor:
         """
         Shortcut to the execute method on the SQLite connection object.
         """
@@ -41,6 +41,27 @@ class DatabaseConnector:
             ).fetchone()
         ):
             self.run_query_from_file("daily_tracker/database/create.sql")
+
+    def truncate_table(self, table_name: str) -> None:
+        """
+        Truncate a table if it exists.
+        """
+        if (
+            self.connection.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE type = 'table'
+                  AND name = :table_name
+                """,
+                {"table_name": table_name}
+            ).fetchone()
+        ):
+            self.connection.execute(
+                f"""
+                DELETE FROM {table_name} WHERE 1=1
+                """
+            )
 
     def run_query_from_file(self, filepath: str) -> sqlite3.Cursor:
         """
