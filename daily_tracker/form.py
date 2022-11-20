@@ -15,8 +15,6 @@ import daily_tracker.actions
 STYLE = {
     "font": ("Tahoma", 8),
 }
-# OPTIONS = ["Item 1", "Item 2", "Item 3"]
-OPTIONS = ["1 Item", "2 Item", "3 Item"]
 
 
 class TrackerForm:
@@ -28,7 +26,7 @@ class TrackerForm:
         Create the form handler.
         """
         self.at_datetime = at_datetime
-        self.action_handler = daily_tracker.actions.ActionHandler(form=self)
+        self.action_handler = daily_tracker.actions.ActionHandler(form=self)  # noqa
         self.interval = self.action_handler.configuration.interval
         self._width = 350
         self._height = 150
@@ -69,7 +67,7 @@ class TrackerForm:
             f"Project:  {self.task}\n"
             f"Detail:   {self.detail}\n"
             f"Interval: {self.interval}\n"
-            f"Datetime: {self.at_datetime.isoformat()[:19]}\n"
+            f"Datetime: {self.at_datetime.strftime('%Y-%m-%d %H:%M:%S')}\n"
             f"{30 * '-'}"
         )
         self._root.destroy()
@@ -79,11 +77,7 @@ class TrackerForm:
         When the value of the Project box changes, update the Detail box with
         the latest value from the Project.
         """
-        print(
-            f"Changing the detail drop-down for task {self.task}. Use memoisation to avoid repeated queries to the DB?"
-        )
         details = self.action_handler.database_handler.get_details_for_task(self.task)
-        print(f"Details: {details}")
         self.detail_text_box.text_box['values'] = details
         self.detail_text_box.text_box.set(details[0] if details else "")
 

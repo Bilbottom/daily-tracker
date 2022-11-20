@@ -35,7 +35,7 @@ class OutlookEvent:
         self.start = self._appointment.start
         self.end = self._appointment.end
         self.body = self._appointment.body
-        self.categories = daily_tracker.utils.utils.comma_list_to_list(self._appointment.categories)
+        self.categories = daily_tracker.utils.utils.string_list_to_list(self._appointment.categories)
 
 
 class OutlookConnector:

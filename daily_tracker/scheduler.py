@@ -5,33 +5,19 @@ files, as well as optionally integrates with other third-party tools.
 import datetime
 import sched
 import time
-from typing import Callable
+from typing import Callable, Any
+
+import daily_tracker.configuration
 
 
-# def _decimal(round_to: int | None = None) -> Callable:
-#     """
-#     Decorator for the `_to_decimal` function with an optional precision to round
-#     to.
-#     """
-#     def decorator(func: Callable) -> Callable:
-#         @functools.wraps(func)
-#         def wrapper(*args, **kwargs) -> Any:
-#             if round_to is None:
-#                 return _to_decimal(func(*args, **kwargs))
-#             else:
-#                 return _to_decimal(round(func(*args, **kwargs), round_to))
-#         return wrapper
-#     return decorator
-
-
-def _to_time() -> None:
+def _get_interval_from_configuration() -> int:
     """
-    Not for usage!
+    Get the interval time from the configuration file.
 
-    Reminder of how to get datetime.datetime.now() into time.time()
+    It's important to re-call this so that updates to the configuration file
+    while the scheduler is running can be reflected in the scheduled events.
     """
-    print(time.time())
-    print(datetime.datetime.now().timestamp())
+    return daily_tracker.configuration.get_configuration().interval
 
 
 def get_next_interval(
@@ -67,7 +53,7 @@ class IndefiniteScheduler:
     various applications indefinitely.
     """
 
-    def __init__(self, action: Callable, interval: int):  # TODO: Remove the action default argument
+    def __init__(self, action: Callable[[datetime.datetime], Any]):
         """
         Create the scheduler.
         """
@@ -75,23 +61,18 @@ class IndefiniteScheduler:
         self._running = False
         self._next_schedule_time: datetime.datetime | None = None
         self._next_event: sched.Event | None = None
+        self._interval = _get_interval_from_configuration()
         self.action = action
-        self._interval = interval
 
-    def next_schedule_time(self) -> str:
+    def _action_wrapper(self) -> None:
         """
         Wrap the action so that we can schedule the next event when it's called.
         """
-        return self._next_schedule_time.strftime("%Y-%m-%d %H:%M:%S")
-
-    def action_wrapper(self) -> None:
-        """
-        Wrap the action so that we can schedule the next event when it's called.
-        """
-        self.action()
+        self.action(self._next_schedule_time)
+        self._interval = _get_interval_from_configuration()
         self._schedule_next()
 
-    def schedule(self, cancel: bool = False) -> None:
+    def _schedule(self, cancel: bool = False) -> None:
         """
         Schedule (or cancel) the next event.
         """
@@ -102,8 +83,27 @@ class IndefiniteScheduler:
             self._next_event = self._scheduler.enterabs(
                 time=self._next_schedule_time.timestamp(),
                 priority=1,
-                action=self.action_wrapper,
+                action=self._action_wrapper,
             )
+
+    def _schedule_next(self) -> None:
+        """
+        Schedule the next event.
+        """
+        assert self._running
+
+        self._next_schedule_time = get_next_interval(
+            from_time=self._next_schedule_time,
+            interval_in_minutes=self._interval,
+        )
+        self._schedule()
+
+    def _cancel_next(self) -> None:
+        """
+        Cancel the next event.
+        """
+        self._schedule(cancel=True)
+        self._running = False
 
     def schedule_first(
         self,
@@ -119,22 +119,3 @@ class IndefiniteScheduler:
         self._next_schedule_time = schedule_at
         self._schedule_next()
         self._scheduler.run()
-
-    def _schedule_next(self) -> None:
-        """
-        Schedule the next event.
-        """
-        assert self._running
-
-        self._next_schedule_time = get_next_interval(
-            from_time=self._next_schedule_time,
-            interval_in_minutes=self._interval,
-        )
-        self.schedule()
-
-    def _cancel_next(self) -> None:
-        """
-        Cancel the next event.
-        """
-        self.schedule(cancel=True)
-        self._running = False

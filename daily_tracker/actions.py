@@ -10,7 +10,6 @@ import daily_tracker.calendars
 import daily_tracker.configuration
 import daily_tracker.connectors
 import daily_tracker.database
-import daily_tracker.form
 import daily_tracker.handlers
 import daily_tracker.utils
 
@@ -31,7 +30,7 @@ class ActionHandler:
     Handler for the actions that are triggered on the pop-up box.
     """
 
-    def __init__(self, form: daily_tracker.form.TrackerForm):
+    def __init__(self, form: daily_tracker.handlers.Form):
         """
         Initialise the main handler and the various handlers to other systems.
         """

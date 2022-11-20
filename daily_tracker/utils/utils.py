@@ -3,11 +3,11 @@ Utilities to use throughout the scripts.
 """
 
 
-def comma_list_to_list(comma_list: str) -> list:
+def string_list_to_list(string_list: str, sep: str = ",") -> list:
     """
-    Convert a string comma-separator list to a Python list.
+    Convert a string list to a Python list by splitting on the separator.
     """
-    return [category.strip() for category in comma_list.split(",")] if comma_list else []
+    return [category.strip() for category in string_list.split(sep)] if string_list else []
 
 
 def get_first_item_in_dict(dictionary: dict) -> tuple:

@@ -3,4 +3,5 @@ from .handlers import (
     DatabaseHandler,
     JiraHandler,
     SlackHandler,
+    Form,
 )

@@ -9,6 +9,7 @@ import datetime
 import json
 import os
 import re
+from typing import Protocol
 
 import pandas as pd
 
@@ -16,10 +17,20 @@ import daily_tracker.calendars
 import daily_tracker.configuration
 import daily_tracker.connectors
 import daily_tracker.database
-import daily_tracker.form
 
 
 DEBUG_MODE = True
+
+
+class Form(Protocol):
+    """
+    The handlers need properties from the form to be able to pass the details
+    around for the various methods.
+    """
+    task: str
+    detail: str
+    at_datetime: datetime.datetime
+    interval: int
 
 
 class Handler(abc.ABC):
@@ -32,7 +43,7 @@ class Handler(abc.ABC):
     def ok_actions(
         self,
         configuration: daily_tracker.configuration.Configuration,
-        form: daily_tracker.form.TrackerForm,
+        form: Form,
     ) -> None:
         """
         Actions to execute when the OK button is pressed on the form.
@@ -50,7 +61,7 @@ class DatabaseHandler(Handler):
     def ok_actions(
         self,
         configuration: daily_tracker.configuration.Configuration,
-        form: daily_tracker.form.TrackerForm,
+        form: Form,
     ) -> None:
         """
         The database actions that need to be executed when the OK button on the
@@ -95,6 +106,8 @@ class DatabaseHandler(Handler):
     def get_details_for_task(self, task: str) -> list:
         """
         Return the list of recent detail for the task.
+
+        TODO: Use memoisation to avoid repeated queries to the DB.
         """
         details = self.connection.execute(
             """
@@ -171,7 +184,7 @@ class CalendarHandler(Handler):
     def ok_actions(
         self,
         configuration: daily_tracker.configuration.Configuration,
-        form: daily_tracker.form.TrackerForm,
+        form: Form,
     ) -> None:
         """
         The calendar actions that need to be executed when the OK button on the
@@ -221,7 +234,7 @@ class JiraHandler(Handler):
     def ok_actions(
         self,
         configuration: daily_tracker.configuration.Configuration,
-        form: daily_tracker.form.TrackerForm,
+        form: Form,
     ) -> None:
         """
         The Jira actions that need to be executed when the OK button on the form
@@ -301,7 +314,7 @@ class SlackHandler(Handler):
     def ok_actions(
         self,
         configuration: daily_tracker.configuration.Configuration,
-        form: daily_tracker.form.TrackerForm,
+        form: Form,
     ) -> None:
         """
         The Slack actions that need to be executed when the OK button on the
