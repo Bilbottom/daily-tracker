@@ -70,7 +70,7 @@ class ActionHandler:
             return self.database_handler.get_last_task_and_detail()
         return self.configuration.appointment_exceptions.get(
             current_meeting,
-            ("Meeting", current_meeting)
+            ("Meetings", current_meeting)
         )
 
     def get_dropdown_options(self) -> dict:
