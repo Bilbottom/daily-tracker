@@ -5,6 +5,8 @@ https://youtu.be/5qOnzF7RsNA
 https://github.com/codefirstio/tkinter-data-entry
 """
 import datetime
+import PIL.Image
+import PIL.ImageTk
 import tkinter as tk
 import tkinter.ttk
 from typing import Any
@@ -15,6 +17,14 @@ import daily_tracker.actions
 STYLE = {
     "font": ("Tahoma", 8),
 }
+ICON = "daily_tracker/clock-icon.png"
+
+
+def load_icon(filepath: str) -> PIL.ImageTk.PhotoImage:
+    """
+    Load an image to the ICO format so that it can be used as application icons.
+    """
+    return PIL.ImageTk.PhotoImage(PIL.Image.open(filepath))
 
 
 class TrackerForm:
@@ -63,7 +73,7 @@ class TrackerForm:
         Wrap the action so that we can schedule the next event when it's called.
         """
         self.action_handler.ok_actions()
-        print(  # Need to get the class properties looking at the Entry, not the Frame
+        print(
             f"Project:  {self.task}\n"
             f"Detail:   {self.detail}\n"
             f"Interval: {self.interval}\n"
@@ -98,6 +108,8 @@ class TrackerForm:
         self._root.geometry(f"{self._width}x{self._height}")
         self._root.eval("tk::PlaceWindow . center")  # Middle of screen
         self._root.title(f"Interval Tracker at {self.date_time} ({self.interval})")
+        print(type(load_icon(ICON)))
+        self._root.wm_iconphoto(False, load_icon(ICON))
 
         text_box_frame_outer = tk.Frame(
             self._root,
