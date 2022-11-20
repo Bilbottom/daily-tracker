@@ -7,7 +7,7 @@ tracker:
   options:
 
     interval:
-      value: 1  # 15
+      value: 15
       type: integer
       category: tracker
       description: >
@@ -27,7 +27,7 @@ tracker:
         Values of "Yes" or "No" only.
 
     show-last-n-weeks:
-      value: 6
+      value: 2
       type: integer
       category: tracker
       description: >
