@@ -105,7 +105,7 @@ tracker:
         Values of "Yes" or "No" only.
 
     post-to-slack:
-      value: Yes
+      value: No
       type: boolean
       allowed-values: [Yes, No]
       category: slack

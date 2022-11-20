@@ -67,10 +67,11 @@ class ActionHandler:
         )
 
         if not self.configuration.use_calendar_appointments or current_meeting is None:
-            return daily_tracker.utils.get_first_item_in_dict(
-                self.database_handler.get_recent_tasks(self.configuration.show_last_n_weeks)
-            )
-        return self.configuration.appointment_exceptions.get(current_meeting[0], current_meeting)
+            return self.database_handler.get_last_task_and_detail()
+        return self.configuration.appointment_exceptions.get(
+            current_meeting,
+            ("Meeting", current_meeting)
+        )
 
     def get_dropdown_options(self) -> dict:
         """

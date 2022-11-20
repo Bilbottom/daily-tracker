@@ -124,10 +124,20 @@ class JiraConnector:
         Call the "Add worklog" endpoint of the API.
 
         https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-worklogs/#api-rest-api-3-issue-issueidorkey-worklog-post
+
+        :param issue_key: The key of the issue to add the worklog to.
+        :param detail: The details of the worklog to add.
+        :param at_datetime: The timestamp corresponding to the start of the
+            worklog. Note that this must be a string in the format
+            %Y-%m-%dT%H:%M:%S.000+0000
+        :param interval: The number of minutes that this worklog corresponds to.
+
+        TODO: Change this so that it updates the previous worklog if multiple
+            work logs are added in succession.
         """
         endpoint = f"issue/{issue_key}/worklog"
         payload = json.dumps({
-            "timeSpentSeconds": interval,
+            "timeSpentSeconds": interval * 60,
             "comment": {
                 "type": "doc",
                 "version": 1,
@@ -146,7 +156,7 @@ class JiraConnector:
             "started": at_datetime
         })
         return requests.request(
-            method="GET",
+            method="POST",
             url=self._base_url + endpoint,
             headers=self.request_headers,
             data=payload,

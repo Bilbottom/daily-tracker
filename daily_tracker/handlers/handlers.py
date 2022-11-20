@@ -19,7 +19,7 @@ import daily_tracker.connectors
 import daily_tracker.database
 
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 
 class Form(Protocol):
@@ -103,6 +103,20 @@ class DatabaseHandler(Handler):
             ).to_dict("split")["data"]
         )
 
+    def get_last_task_and_detail(self) -> tuple[str, str]:
+        """
+        Return the most recent task and its detail.
+        """
+        with self.connection.connection as conn:
+            return conn.execute(
+                """
+                SELECT task, detail
+                FROM tracker
+                ORDER BY date_time DESC
+                LIMIT 1
+                """
+            ).fetchone()
+
     def get_details_for_task(self, task: str) -> list:
         """
         Return the list of recent detail for the task.
@@ -132,18 +146,19 @@ class DatabaseHandler(Handler):
         """
         Write the form values to the database.
         """
-        self.connection.execute(
-            """
-            INSERT INTO tracker(date_time, task, detail, interval)
-            VALUES (:at_datetime, :task, :detail, :interval)
-            """,
-            {
-                "at_datetime": at_datetime.strftime("%Y-%m-%d %H:%M:%S"),
-                "task": task,
-                "detail": detail,
-                "interval": interval,
-            }
-        )
+        with self.connection.connection as conn:
+            conn.execute(
+                """
+                INSERT INTO tracker(date_time, task, detail, interval)
+                    VALUES (:at_datetime, :task, :detail, :interval)
+                """,
+                {
+                    "at_datetime": at_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+                    "task": task,
+                    "detail": detail,
+                    "interval": interval,
+                }
+            )
 
     def write_to_csv(self, filepath: str, previous_days: int = None) -> None:
         """
@@ -200,7 +215,6 @@ class DatabaseHandler(Handler):
             .rename(column_names, axis=1)
             .fillna("")
         )
-
         data["date_time"] = data["date_time"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
         self.truncate_tables()
@@ -209,12 +223,6 @@ class DatabaseHandler(Handler):
                 INSERT INTO task_last_detail(task, detail, last_date_time)
                     SELECT task, '', '' FROM default_tasks
             """)
-            conn.commit()
-        # self.connection.connection.execute("""
-        #     INSERT INTO task_last_detail(task, detail, last_date_time)
-        #         SELECT task, '', '' FROM default_tasks
-        # """)
-        # self.connection.connection.close()
         data.to_sql(
             name="tracker",
             con=self.connection.engine,
@@ -317,7 +325,7 @@ class JiraHandler(Handler):
         self.connector.add_worklog(
             issue_key=issue_key[0],
             detail=detail,
-            at_datetime=at_datetime.isoformat(),
+            at_datetime=at_datetime.isoformat() + ".000+0000",
             interval=interval
         )
 

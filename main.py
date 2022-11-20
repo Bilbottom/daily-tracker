@@ -19,11 +19,8 @@ def main() -> None:
     """
     Entry point into this project.
     """
-    # scheduler = daily_tracker.scheduler.IndefiniteScheduler(create_form)
-    # scheduler.schedule_first()
-
-    db_handler = daily_tracker.handlers.DatabaseHandler("tracker.db")
-    db_handler.import_history("daily-tracker-data.csv")
+    scheduler = daily_tracker.scheduler.IndefiniteScheduler(create_form)
+    scheduler.schedule_first()
 
 
 if __name__ == "__main__":
