@@ -78,7 +78,7 @@ class DatabaseHandler(Handler):
             )
 
             # Only extract data on the hour -- consider making this more flexible
-            if form.at_datetime.minute == 0:
+            if form.at_datetime.minute == 0 and configuration.save_csv_copy:
                 self.write_to_csv(filepath=configuration.csv_filepath)
 
     def get_recent_tasks(self, show_last_n_weeks: int) -> dict:
@@ -184,7 +184,7 @@ class DatabaseHandler(Handler):
         ).to_csv(
             os.path.join(
                 filepath,
-                f"daily-tracker-{datetime.datetime.now().isoformat()}.csv"
+                f"daily-tracker-{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.csv"
             )
         )
 

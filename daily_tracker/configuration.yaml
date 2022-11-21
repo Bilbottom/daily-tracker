@@ -50,7 +50,6 @@ tracker:
     appointment-category-exclusions:
       value:
         - Planned Work
-        - Exclusion
       type: list
       category: calendar
       description: >
