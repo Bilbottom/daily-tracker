@@ -93,6 +93,7 @@ class DatabaseHandler(Handler):
             SELECT task, detail
             FROM task_detail_with_defaults
             WHERE last_date_time >= DATETIME('now', :date_modifier)
+               OR indx = 0  /* Defaults */
             ORDER BY indx, task
         """
         return dict(
