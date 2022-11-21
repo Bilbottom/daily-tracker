@@ -108,7 +108,6 @@ class TrackerForm:
         self._root.geometry(f"{self._width}x{self._height}")
         self._root.eval("tk::PlaceWindow . center")  # Middle of screen
         self._root.title(f"Interval Tracker at {self.date_time} ({self.interval})")
-        print(type(load_icon(ICON)))
         self._root.wm_iconphoto(False, load_icon(ICON))
 
         text_box_frame_outer = tk.Frame(
