@@ -114,3 +114,25 @@ CREATE VIEW task_detail_with_defaults AS
         FROM task_last_detail
         WHERE task NOT IN (SELECT task FROM defaults)
 ;
+
+
+/*
+    + main.tasks_from_yesterday +
+    The tasks and their detail from "yesterday", with yesterday defined as today
+    minus 1 working day so that Monday shows the details from a previous Friday.
+*/
+DROP VIEW IF EXISTS tasks_from_yesterday;
+CREATE VIEW tasks_from_yesterday AS
+    SELECT
+        date_time,
+        task,
+        detail,
+        interval
+    FROM tracker
+    WHERE date_time >= IIF(
+        STRFTIME('%w', DATE('now')) = '1', /* Monday */
+        DATE('now', '-3 day'),
+        DATE('now', '-1 day')
+    )
+    ORDER BY date_time DESC
+;
