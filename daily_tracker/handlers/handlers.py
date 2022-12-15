@@ -272,6 +272,8 @@ class CalendarHandler(Handler):
             event
             for event in self.connection.get_appointments_at_datetime(at_datetime=at_datetime)
             if all(i not in event.categories for i in categories_to_exclude)
+               # and not event.all_day_event
+               and event.start.hour != 0
         ]
 
         return None if len(events) != 1 else events[0].subject
