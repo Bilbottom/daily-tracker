@@ -222,20 +222,20 @@ class Database(core.Input, core.Output):
         dataframe into a dictionary whose keys are the tasks and the values are
         the task's latest detail.
         """
-        # latest_tasks = """
-        #     select task, detail
-        #     from v_latest_tasks
-        #     where last_date_time >= datetime('now', :date_modifier)
-        #        or indx = 0  /* Defaults */
-        #     order by indx, task
-        # """
         latest_tasks = """
             select task, detail
-            from task_detail_with_defaults
+            from v_latest_tasks
             where last_date_time >= datetime('now', :date_modifier)
                or indx = 0  /* Defaults */
             order by indx, task
         """
+        # latest_tasks = """
+        #     select task, detail
+        #     from task_detail_with_defaults
+        #     where last_date_time >= datetime('now', :date_modifier)
+        #        or indx = 0  /* Defaults */
+        #     order by indx, task
+        # """
         output = read_sql(
             sql=latest_tasks,
             con=self.connection,
