@@ -116,7 +116,7 @@ class IndefiniteScheduler:
             interval_in_minutes=self._interval,
         )
         self._schedule()
-        logger.debug(f"Next event scheduled for {self._next_schedule_time}")
+        logger.info(f"Next event scheduled for {self._next_schedule_time}")
 
     def _cancel_next(self) -> None:
         """
