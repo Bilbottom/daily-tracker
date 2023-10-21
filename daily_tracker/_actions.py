@@ -28,6 +28,17 @@ class ActionHandler:
         self.inputs = core.Input.apis
         self.outputs = core.Output.apis
 
+        logger.debug("Using the following inputs:")
+        [
+            logger.debug(f"{name}: {class_}")
+            for name, class_ in self.inputs.items()
+        ]
+        logger.debug("Using the following outputs:")
+        [
+            logger.debug(f"{name}: {class_}")
+            for name, class_ in self.outputs.items()
+        ]
+
         # Form
         self.form = core.form.TrackerForm(
             at_datetime=at_datetime,
@@ -47,7 +58,10 @@ class ActionHandler:
 
         TODO: Replace with the ``on_event`` methods from the input classes.
         """
-        calendar_handler: integrations.Calendar = self.inputs.get("calendar")  # type: ignore
+        logger.debug(f"Getting the default task and detail for {at_datetime}.")
+        # TODO: This should hook onto "calendar", not "outlook"
+        calendar_handler: integrations.Calendar = self.inputs.get("outlook")  # type: ignore
+        logger.debug(f"Using calendar {calendar_handler}.")
         if calendar_handler and self.configuration.use_calendar_appointments:
             current_meetings = [
                 meeting

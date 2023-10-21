@@ -2,6 +2,7 @@
 Various calendar integrations.
 """
 
+import logging
 import os
 
 import core
@@ -13,6 +14,8 @@ if os.name == "nt":
     from integrations.calendars.outlook_windows import Outlook
 elif os.name == "posix":
     from integrations.calendars.outlook_mac import Outlook
+
+logger = logging.getLogger("integrations")
 
 
 CALENDAR_LOOKUP = {
@@ -35,6 +38,8 @@ def get_linked_calendar(configuration: core.Configuration) -> Calendar:
             f" The supported connections are:\n"
             f"{','.join(CALENDAR_LOOKUP.keys())}"
         )
+
+    logger.debug(f"Using {calendar} as the calendar.")
 
     return calendar(configuration)
 

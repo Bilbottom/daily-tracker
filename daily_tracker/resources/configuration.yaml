@@ -4,21 +4,26 @@ tracker:
   options:
     # tracker
     interval: 15
-    keep-awake: false
+    keep-awake: true
     run-on-startup: true
     show-last-n-weeks: 2
     save-csv-copy: false
     csv-filepath: /backups/
 
     # calendar
-    linked-calendar: none
+    linked-calendar: outlook
     use-calendar-appointments: true
     appointment-category-exclusions: [Planned Work, Non-Working]
 
     # jira
     jira-type: cloud # Just to emphasise that Server is not supported
-    jira-filter: "" # sprint IN openSprints() AND assignee = currentUser()
-    post-to-jira: false
-
+    jira-filter: >
+      sprint IN openSprints()
+      AND (
+        assignee = currentUser()
+        OR "Paired With[User Picker (single user)]" = currentUser()
+        OR "additional assignees[user picker (multiple users)]" = currentUser()
+      )
+    post-to-jira: true
     # slack
     post-to-slack: false
