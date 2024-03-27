@@ -60,7 +60,7 @@ class OutlookEvent(CalendarEvent):
         )
 
 
-class OutlookInput(Calendar, core.Input):
+class Outlook(Calendar, core.Input):
     """
     Naive implementation of a connector to Outlook on macOS.
     """
@@ -83,7 +83,12 @@ class OutlookInput(Calendar, core.Input):
         restricted_calendar = self.calendar.calendar_events[
             (appscript.its.start_time >= start_datetime).AND(appscript.its.end_time < end_datetime)
         ].get()
-        return [OutlookEvent.from_appointment(app) for app in restricted_calendar]
+        events = [OutlookEvent.from_appointment(app) for app in restricted_calendar]
+
+        s = "s" if len(events) != 1 else ""  # sourcery skip: avoid-single-character-names-variables
+        logger.debug(f"Found {len(events)} calendar event{s} between {start_datetime} and {end_datetime}.")
+
+        return events
 
     def get_appointments_at_datetime(
         self,
