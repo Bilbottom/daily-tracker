@@ -60,7 +60,7 @@ class OutlookEvent(CalendarEvent):
         )
 
 
-class OutlookInput(Calendar, core.Input):
+class Outlook(Calendar, core.Input):
     """
     Naive implementation of a connector to Outlook on macOS.
     """
@@ -83,7 +83,12 @@ class OutlookInput(Calendar, core.Input):
         restricted_calendar = self.calendar.calendar_events[
             (appscript.its.start_time >= start_datetime).AND(appscript.its.end_time < end_datetime)
         ].get()
-        return [OutlookEvent.from_appointment(app) for app in restricted_calendar]
+        events = [OutlookEvent.from_appointment(app) for app in restricted_calendar]
+
+        s = "s" if len(events) != 1 else ""  # sourcery skip: avoid-single-character-names-variables
+        logger.debug(f"Found {len(events)} calendar event{s} between {start_datetime} and {end_datetime}.")
+
+        return events
 
     def get_appointments_at_datetime(
         self,
@@ -102,3 +107,18 @@ class OutlookInput(Calendar, core.Input):
         logger.debug(f"Found {len(events)} calendar event{s} for {at_datetime}.")
 
         return events
+
+
+if __name__ == "__main__":
+    outlook = Outlook(core.Configuration.from_default())
+    events_now = outlook.get_appointments_at_datetime(datetime.datetime.now())
+    events_upcoming = outlook.get_appointments_between_datetimes(
+        datetime.datetime.now(),
+        datetime.datetime.now() + datetime.timedelta(days=3),
+    )
+
+    print("Events now:")
+    [print("", event) for event in events_now if not event.all_day_event]
+
+    print("Events upcoming:")
+    [print("", event) for event in events_upcoming if not event.all_day_event]
