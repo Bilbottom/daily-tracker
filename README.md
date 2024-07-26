@@ -75,3 +75,19 @@ This has been tested and confirmed to work on an M1 Mac with version `8.6.13` of
 More details available at:
 
 - https://tkdocs.com/tutorial/install.html#install-macos
+
+### 💽 Building the executable
+
+> [!ERROR]
+>
+> This doesn't work yet.
+
+This project uses [PyInstaller](https://www.pyinstaller.org/) to build the executable; run:
+
+```bash
+poetry run pyinstaller daily_tracker/__main__.py \
+  --name daily-tracker \
+  --icon=daily_tracker/resources/clock-icon.ico \
+  --onefile \
+  --windowed
+```
