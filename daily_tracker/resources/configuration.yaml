@@ -18,12 +18,17 @@ tracker:
     # jira
     jira-type: cloud # Just to emphasise that Server is not supported
     jira-filter: >
-      sprint IN openSprints()
-      AND (
-        assignee = currentUser()
-        OR "Paired With[User Picker (single user)]" = currentUser()
-        OR "additional assignees[user picker (multiple users)]" = currentUser()
-      )
+      project = SMSS
+      AND labels = SSData
+      AND status NOT IN (Done, "Ticket Created")
+      AND assignee = currentUser()
+    # jira-filter: >
+    #   sprint IN openSprints()
+    #   AND (
+    #     assignee = currentUser()
+    #     OR "Paired With[User Picker (single user)]" = currentUser()
+    #     OR "additional assignees[user picker (multiple users)]" = currentUser()
+    #   )
     post-to-jira: true
     # slack
     post-to-slack: false
