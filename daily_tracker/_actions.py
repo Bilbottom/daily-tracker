@@ -2,6 +2,7 @@
 The actions for the pop-up box.
 """
 
+import contextlib
 import datetime
 import logging
 
@@ -62,20 +63,20 @@ class ActionHandler:
         # TODO: This should hook onto "calendar", not "outlook"
         calendar_handler: integrations.Calendar = self.inputs.get("outlook")  # type: ignore
         logger.debug(f"Using calendar {calendar_handler}.")
+        current_meetings = []
         if calendar_handler and self.configuration.use_calendar_appointments:
-            current_meetings = [
-                meeting
-                for meeting in calendar_handler.get_appointments_at_datetime(
-                    at_datetime=at_datetime,
-                )
-                if not meeting.all_day_event
-                and all(
-                    i not in meeting.categories
-                    for i in self.configuration.appointment_category_exclusions
-                )
-            ]
-        else:
-            current_meetings = []
+            with contextlib.suppress(Exception):
+                current_meetings = [
+                    meeting
+                    for meeting in calendar_handler.get_appointments_at_datetime(
+                        at_datetime=at_datetime,
+                    )
+                    if not meeting.all_day_event
+                    and all(
+                        i not in meeting.categories
+                        for i in self.configuration.appointment_category_exclusions
+                    )
+                ]
 
         database_handler: core.database.Database = self.outputs["database"]  # type: ignore
         logger.debug(f"Using database {database_handler}.")
